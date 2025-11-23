@@ -27,9 +27,6 @@ var (
 )
 
 type RemoteAllocator struct {
-	// debugPort   string
-	// userDataDir string
-	// headless	bool
 	logger      *slog.Logger
 	command     *exec.Cmd
 	config		*AllocatorConfig
@@ -57,9 +54,6 @@ func NewRemoteAllocator(logger *slog.Logger, options ...AllocatorOption) *Remote
 	return &RemoteAllocator{
 		config:      config,
 		logger:      logger,
-		// debugPort:   debugPort,
-		// userDataDir: userDataDir,
-		// headless:    headless,
 	}
 }
 
