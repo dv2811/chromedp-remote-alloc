@@ -1,18 +1,18 @@
 package allocator
 
 import (
+	"log/slog"
+	"net/http"
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
-	"net/http"
 	
 	"os/signal"
 	"os/exec"
+	"path/filepath"
 	"os"
 
 	"runtime"
-	// "path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -21,28 +21,45 @@ import (
 )
 
 var (
-	ErrMaxConnectAttempts = errors.New("max debug connection attempts exceeded")
-	ErrMaxStartAttempts   = errors.New("max start attempts exceeded")
+	ErrChromiumPathNotFound = errors.New("allocator: chromium based browser executable path not detected")
+	ErrMaxConnectAttempts 	= errors.New("max debug connection attempts exceeded")
+	ErrMaxStartAttempts     = errors.New("max start attempts exceeded")
 )
 
 type RemoteAllocator struct {
-	debugPort   string
-	userDataDir string
+	// debugPort   string
+	// userDataDir string
+	// headless	bool
 	logger      *slog.Logger
 	command     *exec.Cmd
-	headless	bool
+	config		*AllocatorConfig
 }
 
-func NewRemoteAllocator(debugPort string, userDataDir string, headless bool, logger *slog.Logger) *RemoteAllocator {
+// func NewRemoteAllocator(debugPort string, userDataDir string, headless bool, logger *slog.Logger) *RemoteAllocator {
+func NewRemoteAllocator(logger *slog.Logger, options ...AllocatorOption) *RemoteAllocator {
 	if logger == nil {
 		logger = slog.Default()
 	}
+	
+	config := &AllocatorConfig{}
+	for _, opt := range options {
+		opt(config)
+	}
+
+	if config.userDataDir == "" {
+		config.userDataDir = filepath.Join(os.TempDir(), "chromium-data")
+	}
+
+	if config.debugPort == "" {
+		config.debugPort = "9222"
+	}
 
 	return &RemoteAllocator{
-		debugPort:   debugPort,
-		userDataDir: userDataDir,
+		config:      config,
 		logger:      logger,
-		headless:    headless,
+		// debugPort:   debugPort,
+		// userDataDir: userDataDir,
+		// headless:    headless,
 	}
 }
 
@@ -53,11 +70,14 @@ func NewRemoteAllocator(debugPort string, userDataDir string, headless bool, log
 func (d *RemoteAllocator) Start() (context.Context, func(), error) {
 	// os.MkdirAll(d.userDataDir, 0755)
 	// os.Remove(filepath.Join(d.userDataDir, "SingletonLock"))
-
 	chromeExecPath := getChromePath()
+	if chromeExecPath == "" {
+		chromeExecPath = getChromePath()
+	}
+	
 	args := []string{
-		fmt.Sprintf("--user-data-dir=%s", d.userDataDir),
-		fmt.Sprintf("--remote-debugging-port=%s", d.debugPort),
+		fmt.Sprintf("--user-data-dir=%s", d.config.userDataDir),
+		fmt.Sprintf("--remote-debugging-port=%s", d.config.debugPort),
 		"--no-first-run",
 		"--no-default-browser-check",
 		"--enable-unsafe-swiftshader",
@@ -66,7 +86,7 @@ func (d *RemoteAllocator) Start() (context.Context, func(), error) {
 		"--no-sandbox", // applies to Docker environemnt where chromium is run as root
 		"--disable-dev-shm-usage",
 	}
-	if d.headless {
+	if d.config.headless {
 		args = append(args, "--headless")
 	}
 
@@ -81,7 +101,7 @@ func (d *RemoteAllocator) Start() (context.Context, func(), error) {
 
 	d.logger.Info(fmt.Sprintf("Chrome started with PID: %d", cmd.Process.Pid))
 	d.command = cmd
-	debugURL := fmt.Sprintf("http://localhost:%s", d.debugPort)
+	debugURL := fmt.Sprintf("http://localhost:%s", d.config.debugPort)
 
 	// Wait for Chrome to be ready
 	debugURLRetry := 0

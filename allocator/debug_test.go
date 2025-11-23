@@ -83,7 +83,11 @@ func serveTestInterface(port string) {
 func getMessage(portStr string) (string, error) {
 	// when using headless shell docker, headless mode is preferred as no display server
 	// alternatively, we can use xvfb inside our docker image but headfull not the main focus of the test
-	debugger := NewRemoteAllocator(*debugPort, *userDataDir, *headlessMode, nil)
+	debugger := NewRemoteAllocator(nil,
+		RemoteDebuggingPort(*debugPort),
+		WithUserDataDir(*userDataDir),
+		HeadlessMode(*headlessMode),
+	)
 
 	// Start Chrome and get cleanup function
 	remoteCtx, cleanup, err := debugger.Start()

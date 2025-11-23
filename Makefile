@@ -21,7 +21,7 @@ build:
 ## build-test: build test executable
 .PHONY: build-test
 build-test:
-	@go test -c --ldflags='-w -s' . -o ./browser.test
+	@go test -c --ldflags='-w -s' ./allocator -o ./browser.test
 
 ## run-test flags=$1: run test executable with flags
 .PHONY: run-test

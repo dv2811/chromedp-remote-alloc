@@ -15,7 +15,10 @@ import (
 func main() {
 	userDataDir := os.Getenv("USER_DATA_DIR")
 
-	RemoteAllocator := allocator.NewRemoteAllocator("9222", userDataDir, false, nil)
+	RemoteAllocator := allocator.NewRemoteAllocator(nil,
+		allocator.RemoteDebuggingPort("9222"),
+		allocator.WithUserDataDir(userDataDir),
+	)
 
 	// Start Chrome and get cleanup function
 	remoteCtx, cleanup, err := RemoteAllocator.Start()
