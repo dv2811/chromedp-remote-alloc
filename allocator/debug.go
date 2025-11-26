@@ -206,21 +206,37 @@ func (d *RemoteAllocator) Start() (context.Context, func(), error) {
 }
 
 func getChromePath() string {
-	paths := []string{
-		"/usr/bin/chromium",
-		"/usr/bin/chromium-browser",
-		"/usr/bin/google-chrome",
-		"/usr/bin/google-chrome-stable",
-		"/headless-shell/headless-shell",
-	}
-
-	if runtime.GOOS == "darwin" {
-		paths = []string{
+	var path []string
+	switch runtime.GOOS {
+	case "windows":
+		path = []string{
+			filepath.Join(os.Getenv("PROGRAMFILES(X86)"), "Microsoft", "Edge", "Application", "msedge.exe"),
+			filepath.Join(os.Getenv("PROGRAMFILES"), "Microsoft", "Edge", "Application", "msedge.exe"),
+			filepath.Join(os.Getenv("LOCALAPPDATA"), "Microsoft", "Edge", "Application", "msedge.exe"),
+			filepath.Join(os.Getenv("PROGRAMFILES(X86)"), "Google", "Chrome", "Application", "chrome.exe"),
+			filepath.Join(os.Getenv("PROGRAMFILES"), "Google", "Chrome", "Application", "chrome.exe"),
+			filepath.Join(os.Getenv("LOCALAPPDATA"), "Chromium", "Application", "chrome.exe"),
+		}
+	case "darwin":
+		path = []string{
+			"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
 			"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
 			"/Applications/Chromium.app/Contents/MacOS/Chromium",
 		}
+	case "linux":
+		path = []string{
+			"/usr/bin/microsoft-edge",
+			"/usr/bin/microsoft-edge-stable",
+			"/usr/bin/google-chrome",
+			"/usr/bin/google-chrome-stable",
+			"/usr/bin/chromium",
+			"/usr/bin/chromium-browser",
+			"/snap/bin/chromium",
+			"/headless-shell/headless-shell",
+		}
 	}
 
+	// iterate through paths to idenitfy chromium exec path
 	for _, path := range paths {
 		if _, err := os.Stat(path); err == nil {
 			return path
