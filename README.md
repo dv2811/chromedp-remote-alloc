@@ -38,11 +38,9 @@ The `RemoteAllocator` struct manages the Chrome lifecycle:
 
 ```go
 type RemoteAllocator struct {
-    debugPort   string
-    userDataDir string
-    logger      *slog.Logger
-    command     *exec.Cmd
-    headless    bool
+   logger      *slog.Logger
+   command     *exec.Cmd
+   config      *AllocatorConfig
 }
 ```
 
